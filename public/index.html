@@ -57,7 +57,7 @@
 </head>
 <body>
   <div id="container">
-    <video id="avatarVideo" autoplay playsinline muted></video>
+    <video id="avatarVideo" autoplay playsinline></video>
     <button id="startBtn" class="btn">Start Chat</button>
     <button id="endBtn" class="btn">End Chat</button>
   </div>
@@ -75,6 +75,7 @@
       }
       endBtn.style.display = 'none';
       startBtn.style.display = 'block';
+      video.srcObject = null;
     };
 
     const startChat = async () => {
