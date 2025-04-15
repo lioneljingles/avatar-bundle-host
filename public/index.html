@@ -4,10 +4,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="margin:0;padding:0;overflow:hidden;">
+  <button id="startBtn">
+    Start Chat
+  </button>
   <video id="avatarVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
   <script src="avatar-bundle.js"></script>
   <script>
-    (async function() {
+    const startChat = async function() {
       try {
         const params = new URLSearchParams(window.location.search);
         const AVATAR_ID = params.get("avatarId");
@@ -72,7 +75,10 @@
           payload: { message: error.message, stack: error.stack }
         }));
       }
-    })();
+    };
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      startChat();
+    });
   </script>
 </body>
 </html>
