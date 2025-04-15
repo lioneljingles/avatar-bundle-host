@@ -1,14 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    #container {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+
+    #startBtn {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #4C2457;
+      color: white;
+      padding: 10px 30px 12px 30px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      font-family: sans-serif;
+      cursor: pointer;
+      box-shadow: 0 5px 10px rgba(0,0,0,1);
+      z-index: 999;
+    }
+
+    #startBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;overflow:hidden;">
-  <button id="startBtn">
-    Start Chat
-  </button>
-  <video id="avatarVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-  <script src="avatar-bundle.js"></script>
+<body>
+  <div id="container">
+    <video id="avatarVideo" autoplay playsinline muted></video>
+    <button id="startBtn">Start Chat</button>
+  </div>
+
   <script>
     const startChat = async function() {
       try {
@@ -22,17 +70,6 @@
         }
 
         window.avatar = new window.StreamingAvatar({ token, basePath: 'https://api.heygen.com' });
-
-        const originalEmit = window.avatar.emit;
-        window.avatar.emit = function (type, payload) {
-          window.ReactNativeWebView?.postMessage?.(JSON.stringify({
-            type: '__INTERNAL_EMIT',
-            payload: { type, payload }
-          }));
-          return originalEmit.call(this, type, payload);
-        };
-
-        window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'LISTENERS_ATTACHED', payload: {} }));
 
         const session = await window.avatar.createStartAvatar({
           avatarName: AVATAR_ID,
@@ -69,6 +106,9 @@
 
         window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'VOICE_CHAT_STARTED', payload: {} }));
 
+        // hide button after success
+        document.getElementById('startBtn').style.display = 'none';
+
       } catch (error) {
         window.ReactNativeWebView?.postMessage?.(JSON.stringify({
           type: 'WEBVIEW_EXCEPTION',
@@ -76,9 +116,8 @@
         }));
       }
     };
-    document.getElementById('startBtn').addEventListener('click', async () => {
-      startChat();
-    });
+
+    document.getElementById('startBtn').addEventListener('click', startChat);
   </script>
 </body>
 </html>
