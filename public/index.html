@@ -28,7 +28,7 @@
       object-fit: cover;
     }
 
-    #startBtn {
+    .btn {
       position: absolute;
       bottom: 30px;
       left: 50%;
@@ -45,20 +45,41 @@
       z-index: 999;
     }
 
-    #startBtn:disabled {
+    .btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    #endBtn {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div id="container">
     <video id="avatarVideo" autoplay playsinline muted></video>
-    <button id="startBtn">Start Chat</button>
+    <button id="startBtn" class="btn">Start Chat</button>
+    <button id="endBtn" class="btn">End Chat</button>
   </div>
 
   <script>
-    const startChat = async function() {
+    const startBtn = document.getElementById('startBtn');
+    const endBtn = document.getElementById('endBtn');
+    const video = document.getElementById('avatarVideo');
+
+    const endChat = async () => {
+      try {
+        await window.avatar?.stopAvatar?.();
+      } catch (e) {
+        console.warn('Error stopping avatar:', e);
+      }
+      endBtn.style.display = 'none';
+      startBtn.style.display = 'block';
+    };
+
+    const startChat = async () => {
+      startBtn.setAttribute('disabled', 'true');
+
       try {
         const params = new URLSearchParams(window.location.search);
         const AVATAR_ID = params.get("avatarId");
@@ -98,7 +119,9 @@
         });
 
         window.avatar.on('stream_ready', e => {
-          document.getElementById('avatarVideo').srcObject = e.detail;
+          video.srcObject = e.detail;
+          startBtn.style.display = 'none';
+          endBtn.style.display = 'block';
           window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'STREAM_READY', payload: e }));
         });
 
@@ -106,18 +129,17 @@
 
         window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'VOICE_CHAT_STARTED', payload: {} }));
 
-        // hide button after success
-        document.getElementById('startBtn').style.display = 'none';
-
       } catch (error) {
         window.ReactNativeWebView?.postMessage?.(JSON.stringify({
           type: 'WEBVIEW_EXCEPTION',
           payload: { message: error.message, stack: error.stack }
         }));
+        startBtn.removeAttribute('disabled');
       }
     };
 
-    document.getElementById('startBtn').addEventListener('click', startChat);
+    startBtn.addEventListener('click', startChat);
+    endBtn.addEventListener('click', endChat);
   </script>
 </body>
 </html>
