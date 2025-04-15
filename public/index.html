@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;overflow:hidden;">
+  <video id="avatarVideo" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+  <script src="https://lioneljingles.com/avatar-bundle-host/public/avatar-bundle.js"></script>
+  <script>
+    (async function() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const AVATAR_ID = params.get("avatarId");
+        const KNOWLEDGE_ID = params.get("knowledgeId");
+        const token = params.get("token");
+
+        if (!AVATAR_ID || !KNOWLEDGE_ID || !token) {
+          throw new Error("Missing required parameters");
+        }
+
+        window.avatar = new window.StreamingAvatar({ token, basePath: 'https://api.heygen.com' });
+
+        const originalEmit = window.avatar.emit;
+        window.avatar.emit = function (type, payload) {
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({
+            type: '__INTERNAL_EMIT',
+            payload: { type, payload }
+          }));
+          return originalEmit.call(this, type, payload);
+        };
+
+        window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'LISTENERS_ATTACHED', payload: {} }));
+
+        const session = await window.avatar.createStartAvatar({
+          avatarName: AVATAR_ID,
+          knowledgeId: KNOWLEDGE_ID,
+          quality: 'high',
+          language: 'en',
+          disableIdleTimeout: true
+        });
+
+        window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'CREATED_SESSION', payload: { session } }));
+
+        window.avatar.on('avatar_talking_message', e => {
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'AVATAR_TALKING_MESSAGE', payload: e }));
+        });
+
+        window.avatar.on('avatar_end_message', e => {
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'AVATAR_END_MESSAGE', payload: e }));
+        });
+
+        window.avatar.on('user_talking_message', e => {
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'USER_TALKING_MESSAGE', payload: e }));
+        });
+
+        window.avatar.on('user_end_message', e => {
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'USER_END_MESSAGE', payload: e }));
+        });
+
+        window.avatar.on('stream_ready', e => {
+          document.getElementById('avatarVideo').srcObject = e.detail;
+          window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'STREAM_READY', payload: e }));
+        });
+
+        await window.avatar.startVoiceChat({ useSilencePrompt: false });
+
+        window.ReactNativeWebView?.postMessage?.(JSON.stringify({ type: 'VOICE_CHAT_STARTED', payload: {} }));
+
+      } catch (error) {
+        window.ReactNativeWebView?.postMessage?.(JSON.stringify({
+          type: 'WEBVIEW_EXCEPTION',
+          payload: { message: error.message, stack: error.stack }
+        }));
+      }
+    })();
+  </script>
+</body>
+</html>
